@@ -6,12 +6,16 @@
 //
 
 import SwiftUI
+import Combine
 
 @main
 struct FinanceTrackerApp: App {
+    @StateObject private var watchlist = WatchlistStore()
+
     var body: some Scene {
         WindowGroup {
             RootTabView()
+                .environmentObject(watchlist)
         }
     }
 }

@@ -104,7 +104,7 @@ struct ContentView: View {
                                         logoURL: vm.logoURL(for: coin.id)
                                     )
                                 } label: {
-                                    CoinRichRowView(coin: coin, logoURL: vm.logoURL(for: coin.id))
+                                    CoinListRow(coin: coin, logoURL: vm.logoURL(for: coin.id))
                                         .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
                                 }
                             }
@@ -189,7 +189,7 @@ private struct TopMoverCard: View {
 
             ChangeBar(percent: change)
                 .frame(height: 6)
-                .animation(.spring(response: 0.6, dampingFraction: 0.7), value: change)
+                .animation(Animation.spring(response: 0.6, dampingFraction: 0.7), value: change)
         }
         .padding(12)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
@@ -200,16 +200,17 @@ private struct TopMoverCard: View {
     }
 }
 
-private struct CoinRichRowView: View {
+// New list row style matching your request: "#rank Bitcoin  [sparkline]  price"
+private struct CoinListRow: View {
     let coin: Crypto
     let logoURL: URL?
 
+    @State private var points: [Double] = []
+
     var body: some View {
-        let price = coin.usd?.price
-        let change1h = coin.usd?.percent_change_1h
-        let change24h = coin.usd?.percent_change_24h
-        let marketCap = coin.usd?.market_cap
-        let volume24h = coin.usd?.volume_24h
+        let price = coin.usd?.price ?? 0
+        let change = coin.usd?.percent_change_24h ?? 0
+        let color: Color = change >= 0 ? .green : .red
 
         HStack(alignment: .center, spacing: 12) {
             AsyncLogo(url: logoURL)
@@ -217,80 +218,54 @@ private struct CoinRichRowView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(coin.name)
-                        .font(.headline)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
                     if let rank = coin.cmc_rank {
                         Text("#\(rank)")
                             .font(.caption).bold()
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(.gray.opacity(0.15), in: Capsule())
+                            .background(Color.gray.opacity(0.15), in: Capsule())
                             .foregroundStyle(.secondary)
                     }
+                    Text(coin.name)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .layoutPriority(1)
                 }
                 Text(coin.symbol)
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
-            .layoutPriority(0)
 
             Spacer(minLength: 8)
 
-            VStack(alignment: .trailing, spacing: 4) {
+            VStack(alignment: .trailing, spacing: 6) {
+                SparklineView(points: points, tint: color.opacity(0.9))
+                    .frame(width: 86, height: 24)
+                    .opacity(points.isEmpty ? 0.3 : 1)
+
                 Text(formatPrice(price))
                     .font(.headline)
                     .minimumScaleFactor(0.9)
-
-                HStack(spacing: 10) {
-                    if let c1h = change1h {
-                        ChangePill(title: "1h", value: c1h)
-                            .fixedSize()
-                    }
-                    if let c24h = change24h {
-                        ChangePill(title: "24h", value: c24h)
-                            .fixedSize()
-                    }
-                }
-
-                HStack(spacing: 8) {
-                    if let mc = marketCap {
-                        Label(shortenCurrency(mc), systemImage: "building.columns")
-                            .labelStyle(.iconOnly)
-                            .foregroundStyle(.secondary)
-                            .overlay(
-                                Text(shortenCurrency(mc))
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.leading, 16),
-                                alignment: .leading
-                            )
-                            .fixedSize(horizontal: true, vertical: false)
-                    }
-                    if let vol = volume24h {
-                        Label(shortenCurrency(vol), systemImage: "chart.bar")
-                            .labelStyle(.iconOnly)
-                            .foregroundStyle(.secondary)
-                            .overlay(
-                                Text(shortenCurrency(vol))
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.leading, 16),
-                                alignment: .leading
-                            )
-                            .fixedSize(horizontal: true, vertical: false)
-                    }
-                }
+                    .overlay(
+                        Rectangle()
+                            .fill(color.opacity(0.3))
+                            .frame(height: 2)
+                            .offset(y: 10),
+                        alignment: .bottom
+                    )
             }
-            .layoutPriority(1)
         }
         .contentShape(Rectangle())
+        .task(id: coin.id) {
+            points = SparklineBuilder.series(current: price, percentChange: coin.usd?.percent_change_24h)
+        }
     }
 }
 
 #Preview {
     ContentView()
 }
+
