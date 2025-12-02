@@ -87,11 +87,7 @@ struct ContentView: View {
                             Text(message)
                                 .multilineTextAlignment(.center)
                                 .foregroundStyle(.secondary)
-                            Button {
-                                Task { await vm.load() }
-                            } label: {
-                                Label("Retry", systemImage: "arrow.clockwise")
-                            }
+                            // Removed explicit refresh button; pull-to-refresh remains.
                         }
                         .padding()
                         Spacer()
@@ -117,16 +113,7 @@ struct ContentView: View {
             }
             .navigationTitle("Crypto Tracker")
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic))
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        Task { await vm.load() }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .disabled(vm.isLoading)
-                }
-            }
+            // Removed toolbar refresh icon per request
         }
         .task { await vm.load() }
     }

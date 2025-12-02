@@ -365,7 +365,7 @@ private struct WatchlistRichRow: View {
 
 // MARK: - Stat Card
 
-private struct StatCard: View {
+struct StatCard: View {
     let title: String
     let subtitle: String
     let color: Color

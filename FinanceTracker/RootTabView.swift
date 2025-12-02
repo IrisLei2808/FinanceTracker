@@ -1,17 +1,18 @@
 import SwiftUI
 
 struct RootTabView: View {
+    @StateObject private var portfolio = PortfolioStore()
+
     init() {
-        // Global selected tint for tab bar (iOS 15+)
         UITabBar.appearance().unselectedItemTintColor = UIColor.secondaryLabel
     }
 
     var body: some View {
         TabView {
-            // 1) Crypto Tracking (existing main screen)
+            // 1) Markets (Crypto)
             ContentView()
                 .tabItem {
-                    Label("Crypto", systemImage: "bitcoinsign.circle")
+                    Label("Markets", systemImage: "bitcoinsign.circle")
                 }
 
             // 2) NFT
@@ -20,25 +21,56 @@ struct RootTabView: View {
                     Label("NFT", systemImage: "hexagon")
                 }
 
-            // 3) News (restored)
+            // 3) News
             NewsHubView()
                 .tabItem {
                     Label("News", systemImage: "newspaper")
                 }
 
-            // 4) Watchlist
-            WatchlistView()
+            // 4) Portfolio (main tab)
+            PortfolioView()
+                .environmentObject(portfolio)
                 .tabItem {
-                    Label("Watchlist", systemImage: "star")
+                    Label("Portfolio", systemImage: "chart.pie.fill")
                 }
 
-            // 5) Settings
-            SettingsView()
+            // 5) More (contains Watchlist + Settings)
+            MoreView()
+                .environmentObject(portfolio)
                 .tabItem {
-                    Label("Settings", systemImage: "gear")
+                    Label("More", systemImage: "ellipsis.circle")
                 }
         }
+        .environmentObject(portfolio)
         .tint(Color.accentColor)
+    }
+}
+
+private struct MoreView: View {
+    @EnvironmentObject private var portfolio: PortfolioStore
+    @EnvironmentObject private var watchlist: WatchlistStore
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    NavigationLink {
+                        WatchlistView()
+                            .environmentObject(watchlist)
+                    } label: {
+                        Label("Watchlist", systemImage: "star")
+                    }
+
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Label("Settings", systemImage: "gear")
+                    }
+                }
+            }
+            .navigationTitle("More")
+            .listStyle(.insetGrouped)
+        }
     }
 }
 
