@@ -56,64 +56,86 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                // Top Movers carousel
-                if !topMovers.isEmpty {
-                    TopMoversView(coins: topMovers, logoURL: vm.logoURL(for:))
-                        .padding(.horizontal)
-                        .padding(.top, 4)
-                }
-
-                // Sort control
-                Picker("Sort", selection: $sort) {
-                    ForEach(SortOption.allCases) { opt in
-                        Text(opt.rawValue).tag(opt)
+            ZStack {
+                VStack(spacing: 12) {
+                    // Top Movers carousel
+                    if !topMovers.isEmpty {
+                        TopMoversView(coins: topMovers, logoURL: vm.logoURL(for:))
+                            .padding(.horizontal)
+                            .padding(.top, 4)
                     }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
 
-                // Main list
-                Group {
-                    if vm.isLoading && vm.cryptos.isEmpty {
-                        Spacer()
-                        ProgressView("Loading...")
-                        Spacer()
-                    } else if let message = vm.errorMessage, vm.cryptos.isEmpty {
-                        Spacer()
-                        VStack(spacing: 12) {
-                            Text("Error")
-                                .font(.headline)
-                            Text(message)
-                                .multilineTextAlignment(.center)
-                                .foregroundStyle(.secondary)
-                            // Removed explicit refresh button; pull-to-refresh remains.
+                    // Sort control
+                    Picker("Sort", selection: $sort) {
+                        ForEach(SortOption.allCases) { opt in
+                            Text(opt.rawValue).tag(opt)
                         }
-                        .padding()
-                        Spacer()
-                    } else {
-                        List {
-                            ForEach(Array(filteredAndSorted.enumerated()), id: \.element.id) { (_, coin) in
-                                NavigationLink {
-                                    CoinDetailView(
-                                        coin: coin,
-                                        logoURL: vm.logoURL(for: coin.id)
-                                    )
-                                } label: {
-                                    CoinListRow(coin: coin, logoURL: vm.logoURL(for: coin.id))
-                                        .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+
+                    // Main list
+                    Group {
+                        if vm.isLoading && vm.cryptos.isEmpty {
+                            // Space is now managed by overlay; keep a small placeholder to avoid layout jumps
+                            Spacer(minLength: 0)
+                        } else if let message = vm.errorMessage, vm.cryptos.isEmpty {
+                            Spacer()
+                            VStack(spacing: 12) {
+                                Text("Error")
+                                    .font(.headline)
+                                Text(message)
+                                    .multilineTextAlignment(.center)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding()
+                            Spacer()
+                        } else {
+                            List {
+                                ForEach(Array(filteredAndSorted.enumerated()), id: \.element.id) { index, coin in
+                                    NavigationLink {
+                                        CoinDetailView(
+                                            coin: coin,
+                                            logoURL: vm.logoURL(for: coin.id)
+                                        )
+                                    } label: {
+                                        CoinListRow(coin: coin, logoURL: vm.logoURL(for: coin.id))
+                                            .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                                    }
+                                    .onAppear {
+                                        // If you added pagination earlier, keep this trigger; otherwise it’s harmless.
+                                        let backingCount = vm.cryptos.count
+                                        if index == filteredAndSorted.count - 1 && backingCount >= 50 {
+                                            Task { await vm.loadMore() }
+                                        }
+                                    }
+                                }
+
+                                if vm.isLoadingMore {
+                                    HStack {
+                                        Spacer()
+                                        ProgressView().padding(.vertical, 12)
+                                        Spacer()
+                                    }
+                                    .listRowSeparator(.hidden)
                                 }
                             }
+                            .listStyle(.plain)
+                            .refreshable { await vm.load() }
+                            .animation(.easeInOut(duration: 0.25), value: filteredAndSorted.map(\.id))
                         }
-                        .listStyle(.plain)
-                        .refreshable { await vm.load() }
-                        .animation(.easeInOut(duration: 0.25), value: filteredAndSorted.map(\.id))
                     }
+                }
+
+                // Full-screen animated overlay while initial data is loading
+                if vm.isLoading && vm.cryptos.isEmpty {
+                    LoadingOverlay()
+                        .transition(.opacity)
+                        .zIndex(1)
                 }
             }
             .navigationTitle("Crypto Tracker")
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic))
-            // Removed toolbar refresh icon per request
         }
         .task { await vm.load() }
     }
@@ -187,7 +209,7 @@ private struct TopMoverCard: View {
     }
 }
 
-// New list row style matching your request: "#rank Bitcoin  [sparkline]  price"
+// Updated row layout: ensure rank capsule stays readable even with long names.
 private struct CoinListRow: View {
     let coin: Crypto
     let logoURL: URL?
@@ -212,12 +234,18 @@ private struct CoinListRow: View {
                             .padding(.vertical, 2)
                             .background(Color.gray.opacity(0.15), in: Capsule())
                             .foregroundStyle(.secondary)
+                            // Ensure rank doesn’t get squeezed by long names:
+                            .fixedSize()                // keep intrinsic size
+                            .layoutPriority(2)          // rank wins space over name
                     }
+
+                    // Name will truncate before rank shrinks
                     Text(coin.name)
                         .font(.headline)
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .layoutPriority(1)
+                        .minimumScaleFactor(0.8)     // allow a bit of scale before truncating
                 }
                 Text(coin.symbol)
                     .font(.caption)
@@ -252,7 +280,33 @@ private struct CoinListRow: View {
     }
 }
 
+// A lightweight animated full-screen overlay to avoid blank screen on cold start
+private struct LoadingOverlay: View {
+    @State private var spin = false
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        ZStack {
+            // Match system launch background
+            (scheme == .dark ? Color.black : Color.white)
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Image(systemName: "bitcoinsign.circle.fill")
+                    .font(.system(size: 56, weight: .bold))
+                    .foregroundStyle(.orange)
+                    .rotationEffect(.degrees(spin ? 360 : 0))
+                    .animation(.linear(duration: 1.2).repeatForever(autoreverses: false), value: spin)
+
+                Text("Fetching markets…")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .onAppear { spin = true }
+    }
+}
+
 #Preview {
     ContentView()
 }
-

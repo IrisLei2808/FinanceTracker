@@ -12,7 +12,7 @@ struct CoinDetailView: View {
     @EnvironmentObject private var watchlist: WatchlistStore
 
     @State private var selectedTab: Int = 0
-    @State private var range: PriceRange = .d1
+    @State private var range: PriceRange = .h1
     @StateObject private var historyVM = PriceHistoryViewModel()
     // Removed CommunityViewModel and MarketsViewModel
     @StateObject private var newsVM = NewsViewModel()
