@@ -53,11 +53,14 @@ struct SettingsView: View {
                         Spacer()
                         Text(appVersionString()).foregroundStyle(.secondary)
                     }
-                    Link(destination: URL(string: "https://www.example.com/privacy")!) {
+                    Link(destination: URL(string: "https://irislei2808.github.io/cryptotrace-legal/privacy-policy")!) {
                         Label("Privacy Policy", systemImage: "hand.raised")
                     }
-                    Link(destination: URL(string: "https://www.example.com/terms")!) {
+                    Link(destination: URL(string: "https://irislei2808.github.io/cryptotrace-legal/terms-of-service")!) {
                         Label("Terms of Service", systemImage: "doc.plaintext")
+                    }
+                    Link(destination: URL(string: "https://irislei2808.github.io/cryptotrace-legal/disclaimer")!) {
+                        Label("Disclaimer", systemImage: "exclamationmark.bubble")
                     }
                 }
             }
