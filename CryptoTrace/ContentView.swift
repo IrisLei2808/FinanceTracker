@@ -11,6 +11,7 @@ struct ContentView: View {
     @StateObject private var vm = ListingsViewModel()
     @State private var searchText = ""
     @State private var sort: SortOption = .rank
+    @Environment(\.appTheme) private var theme
 
     enum SortOption: String, CaseIterable, Identifiable {
         case rank = "Rank"
@@ -57,15 +58,15 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
+                theme.background.ignoresSafeArea()
+
                 VStack(spacing: 12) {
-                    // Top Movers carousel
                     if !topMovers.isEmpty {
                         TopMoversView(coins: topMovers, logoURL: vm.logoURL(for:))
                             .padding(.horizontal)
                             .padding(.top, 4)
                     }
 
-                    // Sort control
                     Picker("Sort", selection: $sort) {
                         ForEach(SortOption.allCases) { opt in
                             Text(opt.rawValue).tag(opt)
@@ -73,11 +74,10 @@ struct ContentView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
+                    .tint(theme.accent)
 
-                    // Main list
                     Group {
                         if vm.isLoading && vm.cryptos.isEmpty {
-                            // Space is now managed by overlay; keep a small placeholder to avoid layout jumps
                             Spacer(minLength: 0)
                         } else if let message = vm.errorMessage, vm.cryptos.isEmpty {
                             Spacer()
@@ -86,7 +86,7 @@ struct ContentView: View {
                                     .font(.headline)
                                 Text(message)
                                     .multilineTextAlignment(.center)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(theme.secondaryText)
                             }
                             .padding()
                             Spacer()
@@ -100,10 +100,10 @@ struct ContentView: View {
                                         )
                                     } label: {
                                         CoinListRow(coin: coin, logoURL: vm.logoURL(for: coin.id))
-                                            .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
                                     }
+                                    .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                                    .listRowBackground(theme.surface)
                                     .onAppear {
-                                        // If you added pagination earlier, keep this trigger; otherwise it’s harmless.
                                         let backingCount = vm.cryptos.count
                                         if index == filteredAndSorted.count - 1 && backingCount >= 50 {
                                             Task { await vm.loadMore() }
@@ -118,16 +118,17 @@ struct ContentView: View {
                                         Spacer()
                                     }
                                     .listRowSeparator(.hidden)
+                                    .listRowBackground(theme.surface)
                                 }
                             }
-                            .listStyle(.plain)
+                            .listStyle(.insetGrouped)
+                            .scrollContentBackground(.hidden) // prevent default white background
                             .refreshable { await vm.load() }
                             .animation(.easeInOut(duration: 0.25), value: filteredAndSorted.map(\.id))
                         }
                     }
                 }
 
-                // Full-screen animated overlay while initial data is loading
                 if vm.isLoading && vm.cryptos.isEmpty {
                     LoadingOverlay()
                         .transition(.opacity)
@@ -135,6 +136,8 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("Crypto Tracker")
+            .toolbarBackground(theme.surface, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic))
         }
         .task { await vm.load() }
@@ -144,6 +147,7 @@ struct ContentView: View {
 private struct TopMoversView: View {
     let coins: [Crypto]
     let logoURL: (Int) -> URL?
+    @Environment(\.appTheme) private var theme
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -159,12 +163,14 @@ private struct TopMoversView: View {
             }
             .padding(.vertical, 8)
         }
+        .tint(theme.accent)
     }
 }
 
 private struct TopMoverCard: View {
     let coin: Crypto
     let logoURL: URL?
+    @Environment(\.appTheme) private var theme
 
     var body: some View {
         let price = coin.usd?.price
@@ -180,7 +186,7 @@ private struct TopMoverCard: View {
                     if let rank = coin.cmc_rank {
                         Text("#\(rank)")
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(theme.secondaryText)
                     }
                 }
                 Spacer()
@@ -201,20 +207,20 @@ private struct TopMoverCard: View {
                 .animation(Animation.spring(response: 0.6, dampingFraction: 0.7), value: change)
         }
         .padding(12)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(.gray.opacity(0.12), lineWidth: 1)
+                .stroke(theme.surfaceStroke, lineWidth: 1)
         )
     }
 }
 
-// Updated row layout: ensure rank capsule stays readable even with long names.
 private struct CoinListRow: View {
     let coin: Crypto
     let logoURL: URL?
 
     @State private var points: [Double] = []
+    @Environment(\.appTheme) private var theme
 
     var body: some View {
         let price = coin.usd?.price ?? 0
@@ -232,24 +238,22 @@ private struct CoinListRow: View {
                             .font(.caption).bold()
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.gray.opacity(0.15), in: Capsule())
-                            .foregroundStyle(.secondary)
-                            // Ensure rank doesn’t get squeezed by long names:
-                            .fixedSize()                // keep intrinsic size
-                            .layoutPriority(2)          // rank wins space over name
+                            .background(theme.subtleFill, in: Capsule())
+                            .foregroundStyle(theme.secondaryText)
+                            .fixedSize()
+                            .layoutPriority(2)
                     }
 
-                    // Name will truncate before rank shrinks
                     Text(coin.name)
                         .font(.headline)
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .layoutPriority(1)
-                        .minimumScaleFactor(0.8)     // allow a bit of scale before truncating
+                        .minimumScaleFactor(0.8)
                 }
                 Text(coin.symbol)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
@@ -266,7 +270,7 @@ private struct CoinListRow: View {
                     .minimumScaleFactor(0.9)
                     .overlay(
                         Rectangle()
-                            .fill(color.opacity(0.3))
+                            .fill(theme.accent.opacity(0.25))
                             .frame(height: 2)
                             .offset(y: 10),
                         alignment: .bottom
@@ -275,21 +279,20 @@ private struct CoinListRow: View {
         }
         .contentShape(Rectangle())
         .task(id: coin.id) {
-            points = SparklineBuilder.series(current: price, percentChange: coin.usd?.percent_change_24h)
+            // Switch sparkline to 1h change and 60 samples (1 per minute)
+            points = SparklineBuilder.series(current: price, percentChange: coin.usd?.percent_change_1h, count: 60)
         }
     }
 }
 
-// A lightweight animated full-screen overlay to avoid blank screen on cold start
 private struct LoadingOverlay: View {
     @State private var spin = false
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.appTheme) private var theme
 
     var body: some View {
         ZStack {
-            // Match system launch background
-            (scheme == .dark ? Color.black : Color.white)
-                .ignoresSafeArea()
+            theme.background.ignoresSafeArea()
 
             VStack(spacing: 16) {
                 Image(systemName: "bitcoinsign.circle.fill")
@@ -300,7 +303,7 @@ private struct LoadingOverlay: View {
 
                 Text("Fetching markets…")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
             }
         }
         .onAppear { spin = true }

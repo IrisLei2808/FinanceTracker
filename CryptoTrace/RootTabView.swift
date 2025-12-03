@@ -4,6 +4,7 @@ struct RootTabView: View {
     @StateObject private var portfolio = PortfolioStore()
 
     init() {
+        // System default look; only adjust unselected color to system secondary
         UITabBar.appearance().unselectedItemTintColor = UIColor.secondaryLabel
     }
 
@@ -42,7 +43,7 @@ struct RootTabView: View {
                 }
         }
         .environmentObject(portfolio)
-        .tint(Color.accentColor)
+        .tint(Color.accentColor) // Xcode project AccentColor; system-adaptive
     }
 }
 

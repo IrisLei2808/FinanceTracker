@@ -12,7 +12,7 @@ import Combine
 struct FinanceTrackerApp: App {
     @StateObject private var watchlist = WatchlistStore()
 
-    // Read theme from Settings
+    // Read theme from Settings (system/light/dark only)
     @AppStorage("settings.theme") private var theme: Theme = .system
 
     var body: some Scene {
@@ -31,4 +31,3 @@ struct FinanceTrackerApp: App {
         }
     }
 }
-

@@ -357,8 +357,8 @@ private struct WatchlistRichRow: View {
         }
         .contentShape(Rectangle())
         .task(id: coin.id) {
-            // Keep building points in case we want to re-enable sparkline later
-            points = SparklineBuilder.series(current: price, percentChange: coin.usd?.percent_change_24h)
+            // Keep building points, but switch to 1h with 60 samples for consistency if sparkline is re-enabled
+            points = SparklineBuilder.series(current: price, percentChange: coin.usd?.percent_change_1h, count: 60)
         }
     }
 }
