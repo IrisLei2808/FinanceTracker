@@ -85,6 +85,24 @@ func formatPrice(_ value: Double?) -> String {
     return f.string(from: NSNumber(value: converted)) ?? "\(converted)"
 }
 
+// NEW: Currency formatter without cents (0 fraction digits)
+func formatPriceNoCents(_ value: Double?) -> String {
+    guard let value else { return "--" }
+
+    let selectedRaw = UserDefaults.standard.string(forKey: "settings.currency") ?? Currency.usd.rawValue
+    let selected = Currency(rawValue: selectedRaw) ?? .usd
+
+    let converted = convertUSDToSelected(value, selected: selected)
+
+    let f = NumberFormatter()
+    f.numberStyle = .currency
+    f.currencyCode = currencyCode(selected)
+    // Always no decimals
+    f.minimumFractionDigits = 0
+    f.maximumFractionDigits = 0
+    return f.string(from: NSNumber(value: converted)) ?? "\(Int(converted))"
+}
+
 func formatChange(_ value: Double) -> String {
     let f = NumberFormatter()
     f.numberStyle = .percent

@@ -471,11 +471,19 @@ struct NewsHubView: View {
     @StateObject private var vm = NewsDataViewModel()
     @State private var selectedURL: IdentifiedURL?
     @State private var shareURL: IdentifiedURL?
+    @StateObject private var net = NetworkMonitor.shared
 
     var body: some View {
         NavigationStack {
             Group {
-                if vm.isLoading && vm.articles.isEmpty {
+                if !net.isConnected && vm.articles.isEmpty && !vm.isLoading {
+                    OfflineView(
+                        title: "You’re Offline",
+                        message: "News can’t be refreshed without internet. Reconnect and try again."
+                    ) {
+                        Task { await vm.load() }
+                    }
+                } else if vm.isLoading && vm.articles.isEmpty {
                     VStack(spacing: 16) {
                         ProgressView()
                         Text("Fetching latest news…")
@@ -656,3 +664,4 @@ private struct ShareSheet: UIViewControllerRepresentable, Identifiable {
 #Preview {
     NewsHubView()
 }
+

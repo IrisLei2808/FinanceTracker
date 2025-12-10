@@ -32,8 +32,29 @@ final class PortfolioStore: ObservableObject {
         load()
     }
 
+    // Add or merge by coinId:
+    // - If a holding with the same coinId exists, merge amounts and compute weighted average cost per unit.
+    // - Otherwise, append as new.
     func add(_ holding: Holding) {
-        holdings.append(holding)
+        if let idx = holdings.firstIndex(where: { $0.coinId == holding.coinId }) {
+            var existing = holdings[idx]
+            let totalAmount = existing.amount + holding.amount
+            guard totalAmount > 0 else {
+                // If somehow zero after merge, just remove it
+                holdings.remove(at: idx)
+                persist()
+                return
+            }
+            let totalCost = existing.amount * existing.costPerUnit + holding.amount * holding.costPerUnit
+            existing.amount = totalAmount
+            existing.costPerUnit = totalCost / totalAmount
+            // Prefer latest non-empty note/date from the new entry
+            if let n = holding.note, !n.isEmpty { existing.note = n }
+            if let d = holding.date { existing.date = d }
+            holdings[idx] = existing
+        } else {
+            holdings.append(holding)
+        }
         persist()
     }
 

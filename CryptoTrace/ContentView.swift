@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var searchText = ""
     @State private var sort: SortOption = .rank
     @Environment(\.appTheme) private var theme
+    @StateObject private var net = NetworkMonitor.shared
 
     enum SortOption: String, CaseIterable, Identifiable {
         case rank = "Rank"
@@ -60,23 +61,31 @@ struct ContentView: View {
             ZStack {
                 theme.background.ignoresSafeArea()
 
-                VStack(spacing: 12) {
-                    if !topMovers.isEmpty {
-                        TopMoversView(coins: topMovers, logoURL: vm.logoURL(for:))
-                            .padding(.horizontal)
-                            .padding(.top, 4)
+                // Offline state when no data yet
+                if !net.isConnected && vm.cryptos.isEmpty && !vm.isLoading {
+                    OfflineView(
+                        title: "You’re Offline",
+                        message: "We can’t load markets without an internet connection. Please check your network and try again."
+                    ) {
+                        Task { await vm.load() }
                     }
-
-                    Picker("Sort", selection: $sort) {
-                        ForEach(SortOption.allCases) { opt in
-                            Text(opt.rawValue).tag(opt)
+                } else {
+                    VStack(spacing: 12) {
+                        if !topMovers.isEmpty {
+                            TopMoversView(coins: topMovers, logoURL: vm.logoURL(for:))
+                                .padding(.horizontal)
+                                .padding(.top, 4)
                         }
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    .tint(theme.accent)
 
-                    Group {
+                        Picker("Sort", selection: $sort) {
+                            ForEach(SortOption.allCases) { opt in
+                                Text(opt.rawValue).tag(opt)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal)
+                        .tint(theme.accent)
+
                         if vm.isLoading && vm.cryptos.isEmpty {
                             Spacer(minLength: 0)
                         } else if let message = vm.errorMessage, vm.cryptos.isEmpty {
@@ -87,6 +96,11 @@ struct ContentView: View {
                                 Text(message)
                                     .multilineTextAlignment(.center)
                                     .foregroundStyle(theme.secondaryText)
+                                Button {
+                                    Task { await vm.load() }
+                                } label: {
+                                    Label("Retry", systemImage: "arrow.clockwise")
+                                }
                             }
                             .padding()
                             Spacer()
@@ -122,13 +136,14 @@ struct ContentView: View {
                                 }
                             }
                             .listStyle(.insetGrouped)
-                            .scrollContentBackground(.hidden) // prevent default white background
+                            .scrollContentBackground(.hidden)
                             .refreshable { await vm.load() }
                             .animation(.easeInOut(duration: 0.25), value: filteredAndSorted.map(\.id))
                         }
                     }
                 }
 
+                // Keep showing loading overlay (this doubles as “weak connection waiting”)
                 if vm.isLoading && vm.cryptos.isEmpty {
                     LoadingOverlay()
                         .transition(.opacity)
@@ -279,7 +294,6 @@ private struct CoinListRow: View {
         }
         .contentShape(Rectangle())
         .task(id: coin.id) {
-            // Switch sparkline to 1h change and 60 samples (1 per minute)
             points = SparklineBuilder.series(current: price, percentChange: coin.usd?.percent_change_1h, count: 60)
         }
     }
@@ -313,3 +327,4 @@ private struct LoadingOverlay: View {
 #Preview {
     ContentView()
 }
+
