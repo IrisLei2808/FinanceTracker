@@ -259,37 +259,16 @@ private final class NewsDataViewModel: ObservableObject {
         articles = [] // clear while loading to make change visible
         defer { isLoading = false }
 
-        // Fetch both feeds concurrently
-        async let cryptoTask = service.fetch(.crypto)
-        async let marketTask = service.fetch(.market)
-
-        var crypto: [NDArticle] = []
-        var market: [NDArticle] = []
-
-        // We want to keep partial results even if one fails
-        var partialErrors: [String] = []
-
         do {
-            crypto = try await cryptoTask
-        } catch {
-            partialErrors.append("Crypto feed: " + ((error as? LocalizedError)?.errorDescription ?? error.localizedDescription))
-        }
-        do {
-            market = try await marketTask
-        } catch {
-            partialErrors.append("Market feed: " + ((error as? LocalizedError)?.errorDescription ?? error.localizedDescription))
-        }
-
-        let merged = mergeDiverse(crypto + market, preferredLanguage: "english", maxConsecutivePerSource: 1)
-        self.articles = merged
-
-        if !partialErrors.isEmpty, merged.isEmpty {
-            self.errorMessage = partialErrors.joined(separator: "\n")
-        } else if !partialErrors.isEmpty {
-            // Surface as non-blocking info; keep list visible
-            self.errorMessage = partialErrors.joined(separator: "\n")
-        } else {
+            // Fetch only crypto news
+            let crypto = try await service.fetch(.crypto)
+            let merged = mergeDiverse(crypto, preferredLanguage: "english", maxConsecutivePerSource: 1)
+            self.articles = merged
             self.errorMessage = nil
+        } catch {
+            // Surface the error and clear articles
+            self.articles = []
+            self.errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
 
@@ -664,4 +643,3 @@ private struct ShareSheet: UIViewControllerRepresentable, Identifiable {
 #Preview {
     NewsHubView()
 }
-

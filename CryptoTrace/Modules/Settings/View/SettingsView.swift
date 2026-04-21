@@ -31,21 +31,21 @@ struct SettingsView: View {
                     Toggle("Haptics", isOn: $hapticsEnabled)
                 }
 
-                Section(header: Text("Data")) {
-                    Picker("Default Sort", selection: $defaultSort) {
-                        ForEach(DefaultSort.allCases) { s in
-                            Text(s.title).tag(s)
-                        }
-                    }
-                    Toggle("Show Top Movers", isOn: $showTopMovers)
-                }
+//                Section(header: Text("Data")) {
+//                    Picker("Default Sort", selection: $defaultSort) {
+//                        ForEach(DefaultSort.allCases) { s in
+//                            Text(s.title).tag(s)
+//                        }
+//                    }
+//                    Toggle("Show Top Movers", isOn: $showTopMovers)
+//                }
 
-                Section(header: Text("Notifications")) {
-                    Toggle("Price Alerts", isOn: $notificationsEnabled)
-                    Text("Enable to receive price movement alerts. (Placeholder)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+//                Section(header: Text("Notifications")) {
+//                    Toggle("Price Alerts", isOn: $notificationsEnabled)
+//                    Text("Enable to receive price movement alerts. (Placeholder)")
+//                        .font(.caption)
+//                        .foregroundStyle(.secondary)
+//                }
 
                 Section(header: Text("About")) {
                     HStack {
