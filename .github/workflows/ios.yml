@@ -20,5 +20,5 @@ jobs:
         run: |
           xcodebuild \
             -project CryptoTrace.xcodeproj \
-            -scheme CryptoTrace \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -scheme FinanceTracker \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
