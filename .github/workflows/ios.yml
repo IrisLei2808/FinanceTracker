@@ -22,4 +22,3 @@ jobs:
             -project CryptoTrace.xcodeproj \
             -scheme CryptoTrace \
             -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
-            clean build
