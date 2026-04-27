@@ -1,15 +1,9 @@
-#
-//  ios.yml
-//  CryptoTrace
-//
-//  Created by Trong Duc on 4/26/26.
-//
-
 name: iOS CI
 
 on:
   push:
-    branches: [develop]
+    branches:
+      - develop
 
 jobs:
   build:
@@ -20,4 +14,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Test CI
-        run: echo "CI is working 🚀"
+        run: echo "CI is working"
