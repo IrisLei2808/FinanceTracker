@@ -62,7 +62,7 @@ struct PortfolioView: View {
                     .refreshable { await listings.load() }
                 }
             }
-            .navigationTitle("Portfolio")
+            .navigationTitle("Portfolio Tracking")
         }
         .task { await listings.load() }
         .sheet(isPresented: $showingAdd) {
