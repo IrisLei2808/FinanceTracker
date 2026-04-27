@@ -5,6 +5,9 @@
       location = "self:">
    </FileRef>
    <FileRef
-      location = "group:CryptoSplashView.swift">
+      location = "group:OnboardingView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:RootView.swift">
    </FileRef>
 </Workspace>
