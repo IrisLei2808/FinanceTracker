@@ -22,3 +22,5 @@ jobs:
             -project CryptoTrace.xcodeproj \
             -scheme FinanceTracker \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
