@@ -13,5 +13,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Test CI
-        run: echo "CI is working"
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build iOS App
+        run: |
+          xcodebuild \
+            -project CryptoTrace.xcodeproj \
+            -scheme CryptoTrace \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            clean build
