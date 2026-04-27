@@ -50,6 +50,11 @@
 			path = FinanceTrackerUITests;
 			sourceTree = "<group>";
 		};
+		FC21EA262F9F1EE7006A8C45 /* .github */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = .github;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,6 +85,7 @@
 		EBA577FD2EDD3CBB00C9ACA1 = {
 			isa = PBXGroup;
 			children = (
+				FC21EA262F9F1EE7006A8C45 /* .github */,
 				EB9F73F02EDF90D7006BDE7D /* Launch Screen.storyboard */,
 				EBA578082EDD3CBB00C9ACA1 /* CryptoTrace */,
 				EBA578162EDD3CBD00C9ACA1 /* FinanceTrackerTests */,
@@ -115,6 +121,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				EBA578082EDD3CBB00C9ACA1 /* CryptoTrace */,
+				FC21EA262F9F1EE7006A8C45 /* .github */,
 			);
 			name = CryptoTrace;
 			packageProductDependencies = (
